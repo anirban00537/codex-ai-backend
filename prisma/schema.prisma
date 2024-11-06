@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  first_name    String?
+  last_name     String?
+  user_name     String?   @unique @db.VarChar(255)
+  unique_code   String?   @unique @db.VarChar(255)
+  phone         String?   @db.VarChar(180)
+  photo         String?   @db.VarChar(500)
+  country       String?   @db.VarChar(180)
+  birth_date    DateTime?
+  role          Int       @default(2) @db.SmallInt
+  status        Int       @default(0) @db.SmallInt
+  is_subscribed Int       @default(0) @db.SmallInt
+
+  email_verified Int @default(0) @db.SmallInt
+  phone_verified Int @default(0) @db.SmallInt
+  gender         Int @default(1) @db.SmallInt
+
+  provider    String?
+  provider_id String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  UserTokens             UserTokens[]
+  UserVerificationCodes  UserVerificationCodes[]
+  UserPurchase           UserPurchasedPackage[]
+  MyDocuments            MyDocuments[]
+  MyUploads              MyUploads[]
+  PaymentTransaction     PaymentTransaction[]
+  MyImages               MyImages[]
+  FavouriteTemplate      FavouriteTemplate[]
+  GeneratedCode          GeneratedCode[]
+  TextTranslateDocument  TextTranslateDocument[]
+  Review                 Review[]
+  UsesHistory            UsesHistory[]
+  GeneratedTranscription GeneratedTranscription[]
+  UserOpenAiChat         UserOpenAiChat[]
+  UserOpenAiChatMessages UserOpenAiChatMessages[]
+  CsvDocument            CsvDocument[]
+}
+
+model Package {
+  id                        Int                    @id @default(autoincrement())
+  name                      String                 @db.VarChar(255)
+  description               String?                @db.LongText()
+  price                     Decimal                @db.Decimal(19, 2)
+  currency                  String                 @default("USD") @db.VarChar(20)
+  duration                  Int                    @default(2) @db.SmallInt()
+  type                      Int                    @default(2) @db.SmallInt()
+  total_words               BigInt                 @db.BigInt()
+  total_images              BigInt                 @db.BigInt()
+  status                    Int                    @default(1) @db.SmallInt()
+  soft_delete               Boolean                @default(false)
+  image_url                 String?                @db.VarChar(255)
+  total_purchase            BigInt                 @default(0)
+  model_name                String?
+  feature_description_lists String?
+  available_features        String
+  created_at                DateTime               @default(now())
+  updated_at                DateTime               @updatedAt
+  UserPurchase              UserPurchasedPackage[]
+  PaymentTransaction        PaymentTransaction[]
+}
+
+model UserPurchasedPackage {
+  id           Int      @id @default(autoincrement())
+  start_date   DateTime
+  end_date     DateTime
+  status       Int      @default(1)
+  total_words  BigInt   @db.BigInt()
+  total_images BigInt   @db.BigInt()
+
+  used_words         BigInt   @default(0) @db.BigInt()
+  used_images        BigInt   @default(0) @db.BigInt()
+  available_features String
+  model              String?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  package        Package @relation(fields: [package_id], references: [id])
+  user           User    @relation(fields: [user_id], references: [id])
+  user_id        Int
+  package_id     Int
+  payment_method Int
+}
+
+model PaymentTransaction {
+  id             Int      @id @default(autoincrement())
+  payment_method Int
+  price          Decimal  @default(0) @db.Decimal(19, 2)
+  Package        Package? @relation(fields: [packageId], references: [id])
+  packageId      Int?
+  User           User?    @relation(fields: [userId], references: [id])
+  userId         Int?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
+model TemplateCategory {
+  id              Int        @id @default(autoincrement())
+  name            String     @db.VarChar(255)
+  description     String?    @db.VarChar(255)
+  parent_id       Int        @default(0)
+  status          Int        @default(1) @db.SmallInt()
+  is_sub_category Int        @default(0) @db.SmallInt()
+  Template        Template[]
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+}
+
+model Template {
+  id                Int                 @id @default(autoincrement())
+  title             String              @db.VarChar(255)
+  description       String?             @db.LongText()
+  prompt_input      String              @db.Text()
+  prompt            String              @db.Text()
+  color             String?             @db.VarChar(255)
+  icon_tag          String?             @db.VarChar(255)
+  package_type      Int                 @default(1)
+  template_type     Int?                @default(1)
+  status            Int                 @default(0) @db.SmallInt
+  templateCategory  TemplateCategory    @relation(fields: [category_id], references: [id])
+  category_id       Int
+  TemplateField     TemplateField[]
+  MyDocuments       MyDocuments[]
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  MyImages          MyImages[]
+  FavouriteTemplate FavouriteTemplate[]
+}
+
+model TemplateField {
+  id               Int      @id @default(autoincrement())
+  field_name       String   @db.VarChar(255)
+  input_field_name String   @db.VarChar(255)
+  type             Int
+  description      String?  @db.LongText()
+  template         Template @relation(fields: [template_id], references: [id])
+  template_id      Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model MyDocuments {
+  id               Int       @id @default(autoincrement())
+  title            String    @db.Text()
+  prompt           String    @db.LongText()
+  result           String?   @db.LongText()
+  template         Template? @relation(fields: [template_id], references: [id])
+  template_id      Int?
+  total_used_words BigInt    @default(0) @db.BigInt()
+  user             User      @relation(fields: [user_id], references: [id])
+  user_id          Int
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+}
+
+model MyImages {
+  id         Int       @id @default(autoincrement())
+  prompt     String    @db.LongText()
+  image_url  String
+  image_name String
+  user       User      @relation(fields: [user_id], references: [id])
+  user_id    Int
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  Template   Template? @relation(fields: [templateId], references: [id])
+  templateId Int?
+}
+
+model MyUploads {
+  id           Int      @id @default(autoincrement())
+  fieldname    String   @db.VarChar(255)
+  originalname String   @db.VarChar(255)
+  mimetype     String   @db.VarChar(255)
+  file_path    String   @db.VarChar(255)
+  filename     String   @db.VarChar(255)
+  user         User     @relation(fields: [user_id], references: [id])
+  user_id      Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model AdminSettings {
+  id    Int    @id @default(autoincrement())
+  slug  String @unique
+  value String @db.Text()
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model UserTokens {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  refreshToken String   @db.LongText()
+  family       String   @unique
+  browserInfo  String?  @db.LongText()
+  expiresAt    DateTime
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserVerificationCodes {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  code       String   @unique @db.VarChar(10)
+  status     Int      @default(0) @db.SmallInt
+  type       Int      @default(1) @db.SmallInt
+  expired_at DateTime
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model FavouriteTemplate {
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  template_id Int
+  status      Int @default(0) @db.SmallInt
+
+  user     User     @relation(fields: [user_id], references: [id])
+  template Template @relation(fields: [template_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Faq {
+  id       Int    @id @default(autoincrement())
+  type     Int    @default(0) @db.SmallInt
+  question String @db.Text
+  answer   String @db.LongText
+  status   Int    @default(0) @db.SmallInt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model GeneratedCode {
+  id               Int      @id @default(autoincrement())
+  title            String   @db.Text()
+  prompt           String   @db.LongText()
+  result           String?  @db.LongText()
+  total_used_words BigInt   @default(0) @db.BigInt()
+  user             User     @relation(fields: [user_id], references: [id])
+  user_id          Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model GeneratedTranscription {
+  id               Int      @id @default(autoincrement())
+  result           String?  @db.LongText()
+  total_used_words BigInt   @default(0) @db.BigInt()
+  user             User     @relation(fields: [user_id], references: [id])
+  user_id          Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model TextTranslateDocument {
+  id               Int      @id @default(autoincrement())
+  title            String   @db.Text()
+  text             String   @db.LongText()
+  language         String   @db.VarChar(255)
+  prompt           String   @db.LongText()
+  result           String?  @db.LongText()
+  total_used_words BigInt   @default(0) @db.BigInt()
+  user             User     @relation(fields: [user_id], references: [id])
+  user_id          Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model TrustedOrganization {
+  id        Int     @id @default(autoincrement())
+  title     String  @db.VarChar(255)
+  image_url String? @db.Text()
+  status    Int     @default(0) @db.SmallInt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Review {
+  id             Int     @id @default(autoincrement())
+  user_name      String  @db.VarChar(255)
+  designation    String  @db.VarChar(255)
+  user_image_url String? @db.Text()
+  comment        String  @db.Text()
+  rating         Int     @db.SmallInt()
+  status         Int     @db.SmallInt()
+  user           User?   @relation(fields: [user_id], references: [id])
+  user_id        Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model CsvDocument {
+  id               Int      @id @default(autoincrement())
+  title            String   @db.Text()
+  topic            String   @db.LongText()
+  result           String?  @db.LongText()
+  total_used_words BigInt   @default(0) @db.BigInt()
+  user             User     @relation(fields: [user_id], references: [id])
+  user_id          Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model FeatureOfAI {
+  id            Int     @id @default(autoincrement())
+  category_name String  @db.VarChar(255)
+  title         String  @db.Text()
+  description   String  @db.Text()
+  status        Int     @db.SmallInt()
+  file_url      String? @db.VarChar(255)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model ProgramingLanguage {
+  id     Int    @id @default(autoincrement())
+  name   String
+  status Int    @db.SmallInt()
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model UsesHistory {
+  id         Int     @id @default(autoincrement())
+  uses_type  Int     @db.SmallInt()
+  title      String  @db.Text()
+  uses_word  BigInt? @default(0) @db.BigInt()
+  uses_image BigInt? @default(0) @db.BigInt()
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  User       User?    @relation(fields: [userId], references: [id])
+  userId     Int?
+}
+
+model SocialMedia {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  image_url  String   @db.VarChar(255)
+  status     Int      @db.SmallInt()
+  link       String   @db.VarChar(255)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model BlogCategory {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(255)
+  image_url String @db.VarChar(255)
+  status    Int    @db.SmallInt()
+}
+
+model OpenAiChatCategory {
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(255)
+  slug          String  @db.VarChar(255)
+  description   String  @db.MediumText()
+  role          String  @db.VarChar(255)
+  human_name    String  @db.VarChar(255)
+  color         String  @db.VarChar(255)
+  prompt_prefix String? @db.MediumText()
+  help_with     String  @db.MediumText()
+  status        Int     @default(0) @db.SmallInt()
+  image_url     String? @db.VarChar(255)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  UserOpenAiChat UserOpenAiChat[]
+}
+
+model UserOpenAiChat {
+  id                   Int                @id @default(autoincrement())
+  title                String             @db.VarChar(255)
+  total_words          BigInt             @default(0) @db.BigInt()
+  User                 User               @relation(fields: [userId], references: [id])
+  userId               Int
+  OpenAiChatCategory   OpenAiChatCategory @relation(fields: [openAiChatCategoryId], references: [id])
+  openAiChatCategoryId Int
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  UserOpenAiChatMessages UserOpenAiChatMessages[]
+}
+
+model UserOpenAiChatMessages {
+  id          Int     @id @default(autoincrement())
+  role        String  @db.VarChar(255)
+  content     String  @db.Text()
+  response    String? @db.LongText()
+  total_words Int     @default(0) @db.Int()
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  User             User           @relation(fields: [userId], references: [id])
+  userId           Int
+  UserOpenAiChat   UserOpenAiChat @relation(fields: [userOpenAiChatId], references: [id])
+  userOpenAiChatId Int
+}
